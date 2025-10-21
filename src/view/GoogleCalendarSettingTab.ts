@@ -10,7 +10,7 @@ import {
 } from "obsidian";
 import { LoginGoogle, StartLoginGoogleMobile } from "../googleApi/GoogleAuth";
 import { getRefreshToken, setAccessToken, setExpirationTime, setRefreshToken } from "../helper/LocalStorage";
-import { listCalendars } from "../googleApi/GoogleListCalendars";
+import { listCalendars, listAllCalendars } from "../googleApi/GoogleListCalendars";
 import { FileSuggest } from "../suggest/FileSuggest";
 import { FolderSuggest } from "../suggest/FolderSuggester";
 import { checkForNewWeeklyNotes } from "../helper/DailyNoteHelper";
@@ -484,28 +484,32 @@ export class GoogleCalendarSettingTab extends PluginSettingTab {
 				});
 
 
-			containerEl.createEl("h3", "Calendar Blacklist");
-			const calendarBlackList = this.plugin.settings.calendarBlackList;
+			containerEl.createEl("h3", "Calendar Whitelist");
+			containerEl.createEl("p", {
+				text: "Only calendars added to this list will be synced. If empty, only your primary calendar will be synced.",
+				cls: "setting-item-description"
+			});
+			const calendarWhiteList = this.plugin.settings.calendarWhiteList;
 
 			new Setting(containerEl)
-				.setName("Add Item to BlackList")
+				.setName("Add Calendar to Whitelist")
 				.addDropdown(async (dropdown) => {
-					dropdown.addOption("Default", "Select Option to add");
-					const calendars = await listCalendars();
+					dropdown.addOption("Default", "Select calendar to add");
+					const calendars = await listAllCalendars();
 
 					calendars.forEach((calendar) => {
 						dropdown.addOption(
 							calendar.id + "_=_" + calendar.summary,
-							calendar.summary
+							calendar.summary + (calendar.primary ? " (Primary)" : "")
 						);
 
 					});
 
 					dropdown.onChange(async (value) => {
 						const [id, summery] = value.split("_=_");
-						if (!calendarBlackList.contains([id, summery])) {
-							this.plugin.settings.calendarBlackList = [
-								...this.plugin.settings.calendarBlackList,
+						if (!calendarWhiteList.contains([id, summery])) {
+							this.plugin.settings.calendarWhiteList = [
+								...this.plugin.settings.calendarWhiteList,
 								[id, summery],
 							];
 
@@ -515,14 +519,14 @@ export class GoogleCalendarSettingTab extends PluginSettingTab {
 					});
 				});
 
-			calendarBlackList.forEach((calendar) => {
+			calendarWhiteList.forEach((calendar) => {
 				new Setting(containerEl)
 					.setClass("SubSettings")
 					.setName(calendar[1])
 					.addButton((button) => {
 						button.setButtonText("Remove");
 						button.onClick(async () => {
-							this.plugin.settings.calendarBlackList.remove(calendar);
+							this.plugin.settings.calendarWhiteList.remove(calendar);
 							await this.plugin.saveSettings();
 							this.display();
 						});

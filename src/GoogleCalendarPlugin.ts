@@ -55,7 +55,7 @@ const DEFAULT_SETTINGS: GoogleCalendarPluginSettings = {
     optionalNotePrefix: "",
     eventNoteNameFormat: "{{prefix}}{{event-title}}",
 	defaultCalendar: "",
-	calendarBlackList: [],
+	calendarWhiteList: [],
 	insertTemplates: [],
 	useDefaultTemplate: false,
 	defaultTemplate: "",

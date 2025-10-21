@@ -31,7 +31,7 @@ export interface GoogleCalendarPluginSettings {
 
     // Calendar settings
     defaultCalendar: string;
-    calendarBlackList: [string, string][];
+    calendarWhiteList: [string, string][];
 	ignorePatternList: string[];
     insertTemplates: Template[];
     useDefaultTemplate: boolean;
