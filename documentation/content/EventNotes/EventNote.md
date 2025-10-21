@@ -109,8 +109,9 @@ The folder pattern supports the following placeholders:
 - `{{event-end-hour}}`, `{{event-end-hour24}}`, `{{event-end-minute}}`
 
 **Custom Moment.js Formats:**
-- `{{event:FORMAT}}` - Event date with any [moment.js format](https://momentjs.com/docs/#/displaying/format/)
-  - Examples: `{{event:YYYY}}`, `{{event:MMMM}}`, `{{event:YYYY-MM}}`, `{{event:Q}}`
+- `{{FORMAT}}` - Any [moment.js format](https://momentjs.com/docs/#/displaying/format/) for the event date
+  - Examples: `{{YYYY}}`, `{{MMMM}}`, `{{YYYY-MM-DD}}`, `{{Q}}`, `{{dddd}}`
+  - Note: You can also use `{{event:FORMAT}}` syntax if preferred
 
 **Other:**
 - `{{prefix}}` - Optional note prefix from settings
@@ -119,25 +120,31 @@ The folder pattern supports the following placeholders:
 
 **By Calendar and Year/Month:**
 ```
-{{calendar-name}}/{{event:YYYY}}/{{event:MM-MMMM}}
+{{calendar-name}}/{{YYYY}}/{{MM-MMMM}}
 ```
 Result: `Work/2025/10-October/`
 
 **Simple Date Hierarchy:**
 ```
-Meetings/{{event:YYYY}}/{{event:MM}}/{{event:DD}}
+Meetings/{{YYYY}}/{{MM}}/{{DD}}
 ```
 Result: `Meetings/2025/10/21/`
 
+**Daily Inbox with Day Name:**
+```
+_Inbox/daily/{{YYYY-MM-DD-dd}}
+```
+Result: `_Inbox/daily/2025-10-21-Mon/`
+
 **By Quarter:**
 ```
-Events/{{event:YYYY}}/Q{{event:Q}}
+Events/{{YYYY}}/Q{{Q}}
 ```
 Result: `Events/2025/Q4/`
 
 **Complex Pattern:**
 ```
-{{calendar-name}}/{{event:YYYY}}/{{event:MMMM}}/Week-{{event:W}}
+{{calendar-name}}/{{YYYY}}/{{MMMM}}/Week-{{W}}
 ```
 Result: `Work/2025/October/Week-43/`
 

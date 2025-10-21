@@ -355,23 +355,23 @@ export class GoogleCalendarSettingTab extends PluginSettingTab {
 			folderStructureDesc.createEl("br"),
 			"Times: {{event-start-hour}}, {{event-start-hour24}}, {{event-start-minute}}, {{event-end-hour}}, {{event-end-hour24}}, {{event-end-minute}}",
 			folderStructureDesc.createEl("br"),
-			"Other: {{prefix}}, {{event:FORMAT}}",
+			"Other: {{prefix}}",
+			folderStructureDesc.createEl("br"),
+			"Moment.js: {{YYYY-MM-DD}}, {{MMMM}}, {{dddd}}, or any ",
+			folderStructureDesc.createEl("a", {
+				href: "https://momentjs.com/docs/#/displaying/format/",
+				text: "moment format"
+			}),
 			folderStructureDesc.createEl("br"),
 			folderStructureDesc.createEl("br"),
 			folderStructureDesc.createEl("strong", { text: "Examples:" }),
 			folderStructureDesc.createEl("br"),
 			"{{date}}/{{event-title}} → 2025-10-21/Meeting Title",
 			folderStructureDesc.createEl("br"),
-			"{{calendar-name}}/{{event:YYYY-MM}}/{{event-title}} → Work/2025-10/Planning",
+			"{{calendar-name}}/{{YYYY-MM}}/{{event-title}} → Work/2025-10/Planning",
 			folderStructureDesc.createEl("br"),
-			"Events/{{event-year}}/{{event-month}}/{{event-title}} → Events/2025/10/Sync",
+			"_Inbox/daily/{{YYYY-MM-DD-dd}} → _Inbox/daily/2025-10-21-Mon",
 			folderStructureDesc.createEl("br"),
-			folderStructureDesc.createEl("br"),
-			"For moment.js format options, see ",
-			folderStructureDesc.createEl("a", {
-				href: "https://momentjs.com/docs/#/displaying/format/",
-				text: "momentjs.com/docs"
-			}),
 			folderStructureDesc.createEl("br"),
 			folderStructureDesc.createEl("em", { text: "Note: Invalid filesystem characters are automatically removed." })
 		);
@@ -382,7 +382,7 @@ export class GoogleCalendarSettingTab extends PluginSettingTab {
 			.setClass("SubSettings")
 			.addText(text => {
 				text.inputEl.style.fontFamily = "monospace";
-				text.setPlaceholder("e.g., {{calendar-name}}/{{event:YYYY-MM}}/{{event-title}}")
+				text.setPlaceholder("e.g., _Inbox/daily/{{YYYY-MM-DD-dd}}")
 					.setValue(this.plugin.settings.eventNoteFolderPattern)
 					.onChange(async value => {
 						this.plugin.settings.eventNoteFolderPattern = value;

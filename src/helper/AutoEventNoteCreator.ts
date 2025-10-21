@@ -187,6 +187,7 @@ function sanitizeForFilesystem(text: string): string {
  * - {{event-end-minute}} - Event end minute
  * - {{calendar-name}} - Calendar name from organizer displayName/email (sanitized for filesystem)
  * - {{event:FORMAT}} - Event start date formatted with moment.js FORMAT string
+ * - {{FORMAT}} - Any moment.js format as bare placeholder (e.g., {{YYYY-MM-DD}}, {{MMMM}})
  *
  * Moment.js format examples: YYYY-MM-DD, DD/MM/YYYY, MMMM D, YYYY-W##, etc.
  * See https://momentjs.com/docs/#/displaying/format/ for all format options
@@ -194,7 +195,8 @@ function sanitizeForFilesystem(text: string): string {
  * Examples:
  * - "{{date}}/{{event-title}}" -> "2025-10-21/My Meeting"
  * - "{{calendar-name}}/{{event:YYYY-MM}}/{{event-title}}" -> "Work/2025-10/Project Sync"
- * - "Events/{{event-year}}/{{event-month}}/{{event-title}}" -> "Events/2025/10/Q4 Planning"
+ * - "Events/{{YYYY}}/{{MM}}/{{event-title}}" -> "Events/2025/10/Q4 Planning"
+ * - "_Inbox/daily/{{YYYY-MM-DD-dd}}" -> "_Inbox/daily/2025-10-21-Mon"
  *
  * Filesystem sanitization: Invalid characters (< > : " / \ | ? *) and control characters are removed.
  * Leading/trailing spaces and dots are trimmed. If a field becomes empty after sanitization, it's replaced with "Untitled".
@@ -266,6 +268,22 @@ function replacePathPlaceholders(plugin: GoogleCalendarPlugin, event: GoogleEven
             try {
                 const eventDate = window.moment(event.start.date ?? event.start.dateTime);
                 return eventDate.format(format);
+            } catch {
+                // If format is invalid, return the placeholder unchanged
+                return match;
+            }
+        });
+
+        // Also support bare moment.js format placeholders like {{YYYY-MM-DD}}
+        // This matches any {{...}} that hasn't been replaced yet and treats it as a moment format
+        const bareFormatRegex = /{{([^}]+)}}/g;
+        folderName = folderName.replace(bareFormatRegex, (match, format) => {
+            try {
+                const eventDate = window.moment(event.start.date ?? event.start.dateTime);
+                const formatted = eventDate.format(format);
+                // Only use the formatted result if it's different from the format string itself
+                // (moment returns the format string unchanged if it's invalid)
+                return formatted !== format ? formatted : match;
             } catch {
                 // If format is invalid, return the placeholder unchanged
                 return match;
