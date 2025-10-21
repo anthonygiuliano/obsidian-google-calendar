@@ -60,6 +60,8 @@ const DEFAULT_SETTINGS: GoogleCalendarPluginSettings = {
 	useDefaultTemplate: false,
 	defaultTemplate: "",
 	defaultFolder: (app.vault as any).config.newFileFolderPath,
+	// Empty string means use defaultFolder for backward compatibility
+	eventNoteFolderPattern: "",
 	activateDailyNoteAddon: false,
 	dailyNoteDotColor: "#6aa1d8",
 	useWeeklyNotes: false,

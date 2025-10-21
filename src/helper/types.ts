@@ -23,6 +23,7 @@ export interface GoogleCalendarPluginSettings {
     optionalNotePrefix: string;
     defaultTemplate: string;
 	defaultFolder: string;
+    eventNoteFolderPattern: string;
     autoCreateEventNotes: boolean;
 		autoCreateEventNotesMarker: string;
         autoCreateEventKeepOpen: boolean;

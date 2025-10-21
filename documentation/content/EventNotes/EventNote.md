@@ -86,3 +86,79 @@ The setting for the default template.
 
 ![The popup to select a template when creating an Eventnote](./popUpSelectTemplate.png)
 The popup to select a template when creating an Eventnote.
+
+## Folder Structure Configuration
+
+You can configure a custom folder structure for automatically created event notes using the **Advanced Folder Structure** setting. This allows you to organize your meeting notes hierarchically based on dates, calendar names, or custom patterns.
+
+### Available Placeholders
+
+The folder pattern supports the following placeholders:
+
+**Current Date/Time:**
+- `{{date}}` - Current date (YYYY-MM-DD)
+- `{{date-year}}`, `{{date-month}}`, `{{date-day}}`
+- `{{date-hour}}`, `{{date-hour24}}`, `{{date-minute}}`
+
+**Event-Based:**
+- `{{event-date}}` - Event date (YYYY-MM-DD)
+- `{{event-year}}`, `{{event-month}}`, `{{event-day}}`
+- `{{event-title}}` - Event title (sanitized for filesystem)
+- `{{calendar-name}}` - Calendar name from organizer (sanitized)
+- `{{event-start-hour}}`, `{{event-start-hour24}}`, `{{event-start-minute}}`
+- `{{event-end-hour}}`, `{{event-end-hour24}}`, `{{event-end-minute}}`
+
+**Custom Moment.js Formats:**
+- `{{event:FORMAT}}` - Event date with any [moment.js format](https://momentjs.com/docs/#/displaying/format/)
+  - Examples: `{{event:YYYY}}`, `{{event:MMMM}}`, `{{event:YYYY-MM}}`, `{{event:Q}}`
+
+**Other:**
+- `{{prefix}}` - Optional note prefix from settings
+
+### Example Patterns
+
+**By Calendar and Year/Month:**
+```
+{{calendar-name}}/{{event:YYYY}}/{{event:MM-MMMM}}
+```
+Result: `Work/2025/10-October/`
+
+**Simple Date Hierarchy:**
+```
+Meetings/{{event:YYYY}}/{{event:MM}}/{{event:DD}}
+```
+Result: `Meetings/2025/10/21/`
+
+**By Quarter:**
+```
+Events/{{event:YYYY}}/Q{{event:Q}}
+```
+Result: `Events/2025/Q4/`
+
+**Complex Pattern:**
+```
+{{calendar-name}}/{{event:YYYY}}/{{event:MMMM}}/Week-{{event:W}}
+```
+Result: `Work/2025/October/Week-43/`
+
+### Filesystem Safety
+
+All placeholders that insert text (like `{{calendar-name}}` and `{{event-title}}`) are automatically sanitized to ensure filesystem safety:
+
+- Invalid characters are removed: `< > : " / \ | ? *`
+- Control characters are removed
+- Leading/trailing spaces and dots are trimmed
+- Maximum length of 255 characters per folder segment
+- Empty values default to "Untitled"
+
+### Backward Compatibility
+
+If you leave the **Advanced Folder Structure** setting empty, the plugin will use the existing **Default Folder** setting, maintaining backward compatibility with previous configurations.
+
+### Troubleshooting
+
+**Long paths:** If your pattern creates very long paths (>200 characters), consider using shorter placeholders or abbreviations.
+
+**Invalid moment.js formats:** If you use an invalid moment.js format string, the plugin will log an error to the console and use a fallback format (YYYY-MM-DD).
+
+**Special characters:** Calendar names and event titles with special characters are automatically sanitized. If you need to preserve specific formatting, consider using simpler placeholders.

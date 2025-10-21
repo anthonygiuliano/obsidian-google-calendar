@@ -343,6 +343,53 @@ export class GoogleCalendarSettingTab extends PluginSettingTab {
 				});
 			})
 
+		const folderStructureDesc = document.createDocumentFragment();
+		folderStructureDesc.append(
+			"Configurable folder structure for meeting notes. Leave empty to use default folder.",
+			folderStructureDesc.createEl("br"),
+			folderStructureDesc.createEl("strong", { text: "Available placeholders:" }),
+			folderStructureDesc.createEl("br"),
+			"Date: {{date}}, {{date-year}}, {{date-month}}, {{date-day}}, {{date-hour}}, {{date-hour24}}, {{date-minute}}",
+			folderStructureDesc.createEl("br"),
+			"Event: {{event-date}}, {{event-year}}, {{event-month}}, {{event-day}}, {{event-title}}, {{calendar-name}}",
+			folderStructureDesc.createEl("br"),
+			"Times: {{event-start-hour}}, {{event-start-hour24}}, {{event-start-minute}}, {{event-end-hour}}, {{event-end-hour24}}, {{event-end-minute}}",
+			folderStructureDesc.createEl("br"),
+			"Other: {{prefix}}, {{event:FORMAT}}",
+			folderStructureDesc.createEl("br"),
+			folderStructureDesc.createEl("br"),
+			folderStructureDesc.createEl("strong", { text: "Examples:" }),
+			folderStructureDesc.createEl("br"),
+			"{{date}}/{{event-title}} → 2025-10-21/Meeting Title",
+			folderStructureDesc.createEl("br"),
+			"{{calendar-name}}/{{event:YYYY-MM}}/{{event-title}} → Work/2025-10/Planning",
+			folderStructureDesc.createEl("br"),
+			"Events/{{event-year}}/{{event-month}}/{{event-title}} → Events/2025/10/Sync",
+			folderStructureDesc.createEl("br"),
+			folderStructureDesc.createEl("br"),
+			"For moment.js format options, see ",
+			folderStructureDesc.createEl("a", {
+				href: "https://momentjs.com/docs/#/displaying/format/",
+				text: "momentjs.com/docs"
+			}),
+			folderStructureDesc.createEl("br"),
+			folderStructureDesc.createEl("em", { text: "Note: Invalid filesystem characters are automatically removed." })
+		);
+
+		new Setting(containerEl)
+			.setName("Advanced Folder Structure")
+			.setDesc(folderStructureDesc)
+			.setClass("SubSettings")
+			.addText(text => {
+				text.inputEl.style.fontFamily = "monospace";
+				text.setPlaceholder("e.g., {{calendar-name}}/{{event:YYYY-MM}}/{{event-title}}")
+					.setValue(this.plugin.settings.eventNoteFolderPattern)
+					.onChange(async value => {
+						this.plugin.settings.eventNoteFolderPattern = value;
+						await this.plugin.saveSettings();
+					});
+			})
+
 		new Setting(containerEl)
 			.setName("Debug Mode")
 			.setDesc("Enable if something is not working")

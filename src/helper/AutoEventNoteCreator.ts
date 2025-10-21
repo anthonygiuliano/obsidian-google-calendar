@@ -131,9 +131,80 @@ const injectEventDetails = (event: GoogleEvent, inputText: string): string => {
     return inputText;
 }
 
+/**
+ * Sanitizes text for use in filesystem paths
+ * Removes or replaces invalid filesystem characters and control characters
+ * @param text The text to sanitize
+ * @returns Sanitized text safe for filesystem use, or "Untitled" if empty after sanitization
+ */
+function sanitizeForFilesystem(text: string): string {
+	// Remove control characters (ASCII 0-31)
+	// eslint-disable-next-line no-control-regex
+	let sanitized = text.replace(/[\x00-\x1F]/g, "");
 
+	// Replace invalid filesystem characters with empty string or dash
+	sanitized = sanitized
+		.replace(/[<>:"/\\|?*]/g, "")
+		.trim()
+		.replace(/^\.+|\.+$/g, "") // Remove leading/trailing dots
+		.trim(); // Trim spaces after dot removal
 
-function replacePathPlaceholders(plugin: GoogleCalendarPlugin, event: GoogleEvent, folderName: string): string {
+	// If empty after sanitization, return "Untitled"
+	if (!sanitized) {
+		return "Untitled";
+	}
+
+	// Truncate to 255 characters max
+	if (sanitized.length > 255) {
+		sanitized = sanitized.substring(0, 255);
+	}
+
+	return sanitized;
+}
+
+/**
+ * Replaces path placeholders in a string with actual values from event and settings
+ *
+ * Supported placeholders:
+ * - {{prefix}} - Replaced with optionalNotePrefix setting
+ * - {{date}} - Current date in YYYY-MM-DD format
+ * - {{date-year}} - Current year (YYYY)
+ * - {{date-month}} - Current month (MM)
+ * - {{date-day}} - Current day (DD)
+ * - {{date-hour}} - Current hour in 12-hour format (hh)
+ * - {{date-hour24}} - Current hour in 24-hour format (HH)
+ * - {{date-minute}} - Current minute (mm)
+ * - {{event-date}} - Event start date in YYYY-MM-DD format
+ * - {{event-year}} - Event start year (YYYY)
+ * - {{event-month}} - Event start month (MM)
+ * - {{event-day}} - Event start day (DD)
+ * - {{event-title}} - Event title (sanitized for filesystem)
+ * - {{event-start-hour}} - Event start hour in 12-hour format
+ * - {{event-start-hour24}} - Event start hour in 24-hour format
+ * - {{event-start-minute}} - Event start minute
+ * - {{event-end-hour}} - Event end hour in 12-hour format
+ * - {{event-end-hour24}} - Event end hour in 24-hour format
+ * - {{event-end-minute}} - Event end minute
+ * - {{calendar-name}} - Calendar name from organizer displayName/email (sanitized for filesystem)
+ * - {{event:FORMAT}} - Event start date formatted with moment.js FORMAT string
+ *
+ * Moment.js format examples: YYYY-MM-DD, DD/MM/YYYY, MMMM D, YYYY-W##, etc.
+ * See https://momentjs.com/docs/#/displaying/format/ for all format options
+ *
+ * Examples:
+ * - "{{date}}/{{event-title}}" -> "2025-10-21/My Meeting"
+ * - "{{calendar-name}}/{{event:YYYY-MM}}/{{event-title}}" -> "Work/2025-10/Project Sync"
+ * - "Events/{{event-year}}/{{event-month}}/{{event-title}}" -> "Events/2025/10/Q4 Planning"
+ *
+ * Filesystem sanitization: Invalid characters (< > : " / \ | ? *) and control characters are removed.
+ * Leading/trailing spaces and dots are trimmed. If a field becomes empty after sanitization, it's replaced with "Untitled".
+ *
+ * @param plugin Reference to the plugin (for settings)
+ * @param event The Google Calendar event (can be null/undefined)
+ * @param folderName The path template with placeholders
+ * @returns The processed path with all placeholders replaced
+ */
+function replacePathPlaceholders(plugin: GoogleCalendarPlugin, event: GoogleEvent | undefined, folderName: string): string {
 
     //check description for {{prefix}} string replace it with the prefix from the settings
     folderName = folderName.replace("{{prefix}}", plugin.settings.optionalNotePrefix);
@@ -154,32 +225,53 @@ function replacePathPlaceholders(plugin: GoogleCalendarPlugin, event: GoogleEven
     folderName = folderName.replace("{date-minute}}", window.moment().format("mm"));
 
 
-    //check description for {{event-date}} string replace with event start date
-    folderName = folderName.replace("{{event-date}}", window.moment(event.start.date ?? event.start.dateTime).format("YYYY-MM-DD"));
+    // Only process event-based placeholders if event is provided
+    if (event) {
+        //check description for {{event-date}} string replace with event start date
+        folderName = folderName.replace("{{event-date}}", window.moment(event.start.date ?? event.start.dateTime).format("YYYY-MM-DD"));
 
-    //check description for {{event-year}} string replace with event start date's year.
-    folderName = folderName.replace("{{event-year}}", window.moment(event.start.date ?? event.start.dateTime).format("YYYY"));
+        //check description for {{event-year}} string replace with event start date's year.
+        folderName = folderName.replace("{{event-year}}", window.moment(event.start.date ?? event.start.dateTime).format("YYYY"));
 
-    //check description for {{event-month}} string replace with event start date's month.
-    folderName = folderName.replace("{{event-month}}", window.moment(event.start.date ?? event.start.dateTime).format("MM"));
+        //check description for {{event-month}} string replace with event start date's month.
+        folderName = folderName.replace("{{event-month}}", window.moment(event.start.date ?? event.start.dateTime).format("MM"));
 
-    //check description for {{event-day}} string replace with event start date's numeric day.
-    folderName = folderName.replace("{{event-day}}", window.moment(event.start.date ?? event.start.dateTime).format("DD"));
+        //check description for {{event-day}} string replace with event start date's numeric day.
+        folderName = folderName.replace("{{event-day}}", window.moment(event.start.date ?? event.start.dateTime).format("DD"));
 
-    //check description for {{event-title}} string replace with event title
-    folderName = folderName.replace("{{event-title}}", event.summary ?? "event-title");
+        //check description for {{event-title}} string replace with event title (sanitized)
+        const sanitizedTitle = sanitizeForFilesystem(event.summary ?? "Untitled");
+        folderName = folderName.replace("{{event-title}}", sanitizedTitle);
 
-    folderName = folderName.replace("{{event-start-hour}}", event.start.dateTime ? window.moment(event.start.dateTime).format("hh") : "00");
+        folderName = folderName.replace("{{event-start-hour}}", event.start.dateTime ? window.moment(event.start.dateTime).format("hh") : "00");
 
-    folderName = folderName.replace("{{event-start-hour24}}", event.start.dateTime ? window.moment(event.start.dateTime).format("HH") : "00");
+        folderName = folderName.replace("{{event-start-hour24}}", event.start.dateTime ? window.moment(event.start.dateTime).format("HH") : "00");
 
-    folderName = folderName.replace("{{event-start-minute}}", event.start.dateTime ? window.moment(event.start.dateTime).format("mm") : "00");
+        folderName = folderName.replace("{{event-start-minute}}", event.start.dateTime ? window.moment(event.start.dateTime).format("mm") : "00");
 
-    folderName = folderName.replace("{{event-end-hour}}", event.end.dateTime ? window.moment(event.end.dateTime).format("hh") : "00");
+        folderName = folderName.replace("{{event-end-hour}}", event.end.dateTime ? window.moment(event.end.dateTime).format("hh") : "00");
 
-    folderName = folderName.replace("{{event-end-hour24}}", event.end.dateTime ? window.moment(event.end.dateTime).format("HH") : "00");
+        folderName = folderName.replace("{{event-end-hour24}}", event.end.dateTime ? window.moment(event.end.dateTime).format("HH") : "00");
 
-    folderName = folderName.replace("{{event-end-minute}}", event.end.dateTime ? window.moment(event.end.dateTime).format("mm") : "00");
+        folderName = folderName.replace("{{event-end-minute}}", event.end.dateTime ? window.moment(event.end.dateTime).format("mm") : "00");
+
+        // Add support for {{calendar-name}} placeholder
+        const calendarName = event.organizer?.displayName || event.organizer?.email || "Default";
+        const sanitizedCalendarName = sanitizeForFilesystem(calendarName);
+        folderName = folderName.replace("{{calendar-name}}", sanitizedCalendarName);
+
+        // Add support for {{event:FORMAT}} placeholders with moment.js format strings
+        const eventFormatRegex = /{{event:([^}]+)}}/g;
+        folderName = folderName.replace(eventFormatRegex, (match, format) => {
+            try {
+                const eventDate = window.moment(event.start.date ?? event.start.dateTime);
+                return eventDate.format(format);
+            } catch {
+                // If format is invalid, return the placeholder unchanged
+                return match;
+            }
+        });
+    }
 
     return folderName;
 }
@@ -187,22 +279,25 @@ function replacePathPlaceholders(plugin: GoogleCalendarPlugin, event: GoogleEven
 async function getEventNoteFilePath(plugin: GoogleCalendarPlugin, event: GoogleEvent, folderPath: string) {
     const { adapter } = app.vault;
 
-    if (folderPath) {
+    // Use eventNoteFolderPattern if set, otherwise use folderPath parameter or default
+    if (plugin.settings.eventNoteFolderPattern) {
+        folderPath = replacePathPlaceholders(plugin, event, plugin.settings.eventNoteFolderPattern);
+    } else if (folderPath) {
         //Remover he last - from :-obsidian-: if the new file uses a template
         if (folderPath.endsWith("-")) {
             folderPath = folderPath.slice(0, -1);
         }
-
-        //Replace path backslashes with forward slashes to allow path to work on all OS
-        folderPath = "/" + folderPath.split(/[/\\]/).join("/");
-
-        //If the folder doesn't exist create it with all the parent folders
-        if (! await adapter.exists(folderPath)) {
-            await adapter.mkdir(folderPath);
-        }
     } else {
-        //Default to the root folder
-        folderPath = app.fileManager.getNewFileParent("").path;
+        //Default to the root folder using the defaultFolder setting
+        folderPath = plugin.settings.defaultFolder || app.fileManager.getNewFileParent("").path;
+    }
+
+    // Replace path backslashes with forward slashes to allow path to work on all OS
+    folderPath = "/" + folderPath.split(/[/\\]/).join("/");
+
+    // If the folder doesn't exist create it with all the parent folders
+    if (! await adapter.exists(folderPath)) {
+        await adapter.mkdir(folderPath);
     }
 
     const fileName = replacePathPlaceholders(plugin, event, plugin.settings.eventNoteNameFormat);
